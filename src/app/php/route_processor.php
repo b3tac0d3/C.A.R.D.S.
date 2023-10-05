@@ -45,9 +45,11 @@ class route extends controller{
         $sess = new user_session();
         $validated = $sess -> validate_user_session();
         if($validated == -1){
-            header("location: session_expired");
+            header("location: error_session_expired");
+            return;
         }else if($validated == 0){
-            header("location: login_required");
+            header("location: error_login_required");
+            return;
         }else{
             // If the session is good, log the latest activity so it doesn't expire needlessly
             $sess -> add_user_session_last_activity();
@@ -64,17 +66,11 @@ class route extends controller{
         // If session is valid, check required permissions
         if(empty($_SESSION)) session_start();
         if($_SESSION["user_session"]["main_role"] < $permission_required){
-            header("location: permission_required");
-            exit;
+            header("location: error_permission_required");
+            return;
         }
         return $this;
-    } // perms()
-
-    function set_perm($permission_required){
-        $this -> permission_required = $permission_required;
-
-        return $this;
-    } // set_perm()
+    } // perm()
 
     function run_script($file){
         // Script is passed automatically in the scope

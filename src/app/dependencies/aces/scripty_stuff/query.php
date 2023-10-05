@@ -266,7 +266,18 @@ class query extends db{
         $this -> insert_sql_string = "({$this -> insert_list})";
         
         return $this;
-    } // set_insert_columns()
+    } // set_insert_column()
+
+    function set_insert_columns($columns, $values){
+        // The key difference is that this accpets multiple values as arrays
+        // Columns = arry and values = array
+        // These are associative based on key (ie cols = user, pass, active ?? vals = user, pass, 1)
+
+        foreach($columns as $key => $val)
+            $this -> set_insert_column($val, $values[$key]);
+
+        return $this;
+    } // set_insert_columns
 
     function set_alias($alias){
         $this -> alias = $alias;
@@ -399,11 +410,15 @@ class query extends db{
 
 
     private function dumpSQLQuery($string,$data) {
-        $indexed=$data==array_values($data);
-        foreach($data as $k=>$v) {
-            if(is_string($v)) $v="'$v'";
-            if($indexed) $string=preg_replace('/\?/',$v,$string,1);
-            else $string=str_replace(":$k",$v,$string);
+        $indexed = $data == array_values($data);
+        foreach($data as $k => $v) {
+            // These two line are to eliminate deprication errors for passing null values to second arg of preg_replace in PHP 8.1+
+            if(empty($v) && is_string($v)) $v = "";
+            if(empty($v)) $v = 0;
+            
+            if(is_string($v)) $v = "'$v'";
+            if($indexed) $string = preg_replace('/\?/',$v,$string,1);
+            else $string = str_replace(":$k",$v,$string);
         }
         return $string;
     }

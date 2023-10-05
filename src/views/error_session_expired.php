@@ -14,8 +14,8 @@
 
 @section(content)
     <div class = "d-flex justify-content-start">
-        <div class = "container" style = "max-width: 400px;">
-            <h2>Sorry! You have to be logged in to view that. Please log in <a href = "login">here</a></h2>
+        <div class = "container">
+            <h2>Looks like your session expired! Please log back in <a href = "login">here</a></h2>
         </div>
     </div>
 @endsection

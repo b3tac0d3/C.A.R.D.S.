@@ -14,7 +14,7 @@
 
 @section(content)
     <div class = "d-flex justify-content-start">
-        <div class = "container" style = "max-width: 400px;">
+        <div class = "container">
             <h2>Sorry - It looks like you don't have the required permissions to view that page. Please contact the system admin if you think this was an error.</h2>
         </div>
     </div>

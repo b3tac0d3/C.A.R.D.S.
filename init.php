@@ -1,6 +1,9 @@
 <?php
 
 $app_name = "cards";
+$local_port = "8888"; // Leave blank for default port 80
+$mysql_port = "8889";
+$app_url = "http://localhost";
 
 return array(
 /************
@@ -46,7 +49,7 @@ App
 "base_dir" => $base_dir = $_SERVER["DOCUMENT_ROOT"] . "/$app_name",
 
 /* Base URL for site */
-"base_url" => $base_url = "http://localhost/$app_name",
+"base_url" => $base_url = $app_url . (!empty($local_port) && $local_port != "80" ? ":" . $local_port : "") . "/" . $app_name,
 
 // Sub-Directory for URL/URI purposes
 "base_uri_ext" => "$app_name/",
@@ -177,7 +180,7 @@ db
 "charset" => "utf8mb4",
 
 /* Default port */
-"port" => "3306",
+"port" => $mysql_port,
 
 /* Database name */
 "database" => "cards",

@@ -23,7 +23,8 @@ class db{
         try{
             $this -> db = new PDO("mysql:host=$host;charset=$charset;port=$port;dbname=$db_name", $user, $pass);
         }catch(PDOException $e){
-            $this -> log -> set_record("connection_error", ["error" => trim($e -> getMessage())]);
+            // $this -> log -> set_record("connection_error", ["error" => trim($e -> getMessage())]);
+            echo $e -> getMessage();
             return;
         } // try
 
