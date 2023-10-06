@@ -114,13 +114,17 @@ class builder{
 
     function form($attributes = [], $elements = []){
         $elem_attributes = $this -> process_attributes($attributes);
-        
         $element_output = null;
         foreach($elements as $e){
             $element_output .= $e;
         }
 
-        return "<form $elem_attributes>{$element_output}</form>";
+        // FIND A WAY TO WORK IN THE MESSAGE CLEANER AND WITH OPTIONS IN THE FUTURE 10/6/23
+        return "
+            <form $elem_attributes>
+                <div class = 'form_message text-danger'></div>
+                {$element_output}
+            </form>";
     } // mk_form()
 
     function print_form($attributes = []){

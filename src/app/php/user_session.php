@@ -8,13 +8,14 @@ switch($_GET["script"] ?? null){}
 
 class user_session{
 
-    function create_user_session($user_name, $user_role){ // pass info in array instead of variables?
+    function create_user_session($user_name, $user_role, $user_id){ // pass info in array instead of variables?
         // Set user session variables
         $user_session["login_time"] = time();
         $user_session["session_expire"] = 1800; // 30 minutes
         $user_session["last_activity"] = time(); // Updates with every click or change if not passed expiration limit
         $user_session["user_name"] = $user_name;
         $user_session["main_role"] = $user_role;
+        $user_session["user_id"] = $user_id;
         // Set session variables
         $_SESSION["user_session"] = $user_session;
         return 1;

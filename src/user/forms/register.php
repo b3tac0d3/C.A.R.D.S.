@@ -2,8 +2,8 @@
     $frm = new folds\builder();
 
     $inp_email = [
-        $frm -> label("Email Address", ["for|email"]),
-        $frm -> input("text", ["nm|email", "id|email", "cl|form-control", "ph|Enter email"])
+        $frm -> label("Email Address", ["for|username"]),
+        $frm -> input("text", ["nm|username", "id|username", "cl|form-control", "ph|Enter email"])
     ];
 
     $inp_pass = [
@@ -26,7 +26,8 @@
         $frm -> input("text", ["nm|lname", "id|lname", "cl|form-control", "ph|Last Name"])
     ];
 
-    return $frm -> form(["ac|register.php", "cl|card-form"],[
+    return $frm -> form(["ac|register_new_user", "cl|card-form spadeMe spadeScript"],[
+        // $frm -> elem("div",["cl|form_message text-danger fw-bold"]),
         $frm -> div(["cl|row"],[
             $frm -> div(["cl|col"], $inp_fname),
             $frm -> div(["cl|col"], $inp_lname)

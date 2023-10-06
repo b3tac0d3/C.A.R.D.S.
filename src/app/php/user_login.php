@@ -42,6 +42,13 @@ class user_login{
 
         $ajax = new spades();
 
+        // Check to make sure we don't have empty fields
+        if(empty($this -> inp_username) || empty($this -> inp_password)){
+            echo $ajax -> quickMsg("Please enter a username and a password to continue.");
+            return;
+        }
+
+        // Get user info for verifying and logging
         $this -> query_user_info($this -> inp_username);
 
         if($this -> test_user_name() == false){
@@ -65,7 +72,7 @@ class user_login{
 
         // Set up session
         $session = new user_session;
-        $session -> create_user_session($this -> inp_username, $this -> user_data_array["main_role"]);
+        $session -> create_user_session($this -> inp_username, $this -> user_data_array["main_role"], $this -> user_data_array["id"]);
 
         // Return the JSON to spades to finish jquery scripts
         $ajax -> setRedirect("dashboard");

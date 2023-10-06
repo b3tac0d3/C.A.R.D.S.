@@ -30,4 +30,8 @@ define("aces_log_file_dir_connection_error", $aces_doc_root . $aces_log_director
 define("aces_log_time_limit_query", "M"); // Default to monthly - "W" (Weekly) | "M" (Monthly) | "Q" (Quarterly) | "Y" (Yearly)
 define("aces_log_time_limit_connection", "M"); // Default to monthly - "W" (Weekly) | "M" (Monthly) | "Q" (Quarterly) | "Y" (Yearly)
 
+// Database record logging options
+define("aces_db_record_logging_life", true); // Set to false if you don't want to log record create and delete records in the database
+define("aces_db_record_logging_edits", true); // Set to false if you don't want to log record edits and values in the database
+
 ?>

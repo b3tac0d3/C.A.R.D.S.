@@ -318,6 +318,24 @@ class query extends db{
     }
 
     /*==================================================================================================================
+        Database Audit Logging
+    ==================================================================================================================*/
+
+    private function audit_db_record_create($table, $record_id){
+        if(empty($_SESSION)) session_start();
+        $user_id = $_SESSION["user_session"]["user_id"] ?? null;
+        $insert_cols = ["rec_table_name", "rec_row_id", "create_date", "create_ip", "create_id", "create_sess_id"];
+        $insert_vals = [$table, $record_id, date("Y-m-d h:i:s"), $_SERVER["REMOTE_ADDR"], $user_id, $_SESSION["fnd"]["id"]];
+        $db = new query();
+        $db -> set_insert_columns($insert_cols, $insert_vals) -> insert("log_record_life");
+        return $this;
+    } // audit_db_record_create()
+
+    private function audit_db_record_edit(){} // audit_db_record_edit()
+
+    private function audit_db_record_delete(){} // audit_db_record_delete()
+
+    /*==================================================================================================================
         Class Control Methods
     ==================================================================================================================*/
 
@@ -344,10 +362,8 @@ class query extends db{
                 $this -> query_string = "DELETE FROM {$this -> table} {$this -> where_stmt}";
                 break;
         }
-        
 
-        $this -> query = $this -> db -> prepare($this -> query_string);
-
+        $this -> query = $this -> db -> prepare(trim($this -> query_string));
         // Run query and capture run time
         $query_start_time = microtime(true);
             try{
@@ -357,7 +373,7 @@ class query extends db{
                     "error" => trim($e -> getMessage()),
                     "query_string" => preg_replace(array('/\s{2,}/', '/[\t\n]/'), ' ', $this -> dumpSQLQuery($this -> query_string, $this -> execute))
                 ]);
-                echo "<br><br><b><i>aces Error</i>: " . $e -> getMessage() . "</b>";
+                echo "<br><br><b><i>ACES Error</i>: " . $e -> getMessage() . "</b>";
                 exit;
             } // try
             $query_row_count = $this -> query -> rowCount();
@@ -388,6 +404,9 @@ class query extends db{
                 "last_insert_id" => $this -> db -> lastInsertId()
             );
             $this -> lastInsertId = $this -> db -> lastInsertId();
+            // Add to database record logs
+            if(aces_db_record_logging_edits == true && $this -> table != "log_record_life")
+                $this -> audit_db_record_create($this -> table, $this -> lastInsertId);
         }else{ // query_type == delete or update
             $this -> results = array("status"=>1);
         }

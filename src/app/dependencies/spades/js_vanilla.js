@@ -73,7 +73,7 @@ function spadeForm(event){
     if(element.classList.contains("spadeScript"))
         href = "src/routes/forms_routes.php?script=" + href;
 
-    element.querySelector(".form_message").innerHTML = "Please wait...";
+    // element.querySelector(".form_message").innerHTML = "Please wait...";
 
     if (enctype === "multipart/form-data") {
         const formData = new FormData(element);

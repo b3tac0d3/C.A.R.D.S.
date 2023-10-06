@@ -18,7 +18,7 @@
     ];
     
     return $frm -> form(["ac|user_login", "style|width:50%;", "cl|spadeMe spadeScript", "id|login_form"],[
-            $frm -> elem("div",["cl|form_message text-danger fw-bold"]),
+            // $frm -> elem("div",["cl|form_message text-danger fw-bold"]),
             $frm -> div(["cl|form-group"], $inp_username),
             $frm -> div(["cl|form-group"], $inp_pass),
             $frm -> div(["cl|form-group form-check"], $inp_rem),
