@@ -14,6 +14,9 @@ switch($_REQUEST["script"] ?? null){
     case "register_new_user":
         $reg -> register_user();
         break;
+    case "user_delete":
+        $reg -> delete_user();
+        break;
 }
 
 class user_registration{
@@ -100,6 +103,28 @@ class user_registration{
     function check_existing_user(){}
 
     function add_user(){}
+
+    function delete_user(){
+        
+        $this -> username = trim($_REQUEST["username"]);
+        
+        $ajax = new spades();
+       
+        // Check database for existing user
+        // $db = new aces\query();
+        // $validate_user = $db -> set_column("username") -> set_where("username", $this -> username) -> select("users");
+        // if(count($validate_user) < 1){
+        //     echo $ajax -> quickMsg("Username not found");
+        //     return;
+        // }
+
+        $db1 = new aces\query();
+        $db1 -> set_update_column("active", 0) -> set_where("username", $this -> username) -> update("users");
+
+        echo $ajax -> quickMsg("done");
+        return;
+
+    }
 
 } // class user_registration
 

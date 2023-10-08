@@ -135,6 +135,13 @@ class query extends db{
         return $this -> execute_query($table);
     } // delete()
 
+    function deactivate($table){
+        // This function is specifically designed to deactivate rows and log the delete while keeping the record
+        // Consider this a "soft delete"
+        $this -> query_type = "deactivate";
+        return $this -> execute_query($table);
+    } // deactivate()
+
     function custom($query, $params = array()){
         $this -> query_string = $query;
         $this -> execute = $params;
@@ -143,7 +150,7 @@ class query extends db{
         $this -> results = $this -> query -> fetchAll($this -> fetch);
         $this -> lastInsertId = $this -> db -> lastInsertId();
         return $this -> results;
-    }
+    } // custom()
 
     /*==================================================================================================================
         Query Setup
@@ -179,8 +186,10 @@ class query extends db{
         if(empty($this -> where_array)) $this -> where_array = array();
 
         $where_factor = "? ";
-            
+        
+        // If value is an array, it's either for BETWEEN or IN statement
         if(!is_array($value)) $value = explode(",", $value);
+
         if($operator == "BETWEEN"){
             $where_factor = "? AND ? ";
             array_push($this -> where_array, $value[0], $value[1]);
@@ -190,11 +199,18 @@ class query extends db{
         }else{
             array_push($this -> where_array, $value[0]);
         }
-
+        
         $this -> where_stmt .= "$column $operator $where_factor";
         
         return $this;
     } // set_where()
+
+    function set_where_array($columns, $values){
+        // Push an array of where statements but only for = operator
+        // Alternative statements with BETWEEN or IN will still have to be set individually
+        foreach($columns as $k => $v) $this -> set_where($v, $values[$k]);
+        return $this;
+    }
 
     function set_group($column){
         if(empty($this -> group)){
@@ -245,7 +261,17 @@ class query extends db{
 
         array_push($this -> execute, $value);
         
-        $this -> columns = "({$this -> columns_list})";
+        $this -> columns = "{$this -> columns_list}";
+        return $this;
+    } // set_update_columns()
+
+    function set_update_array($columns, $values){
+        // The key difference is that this accpets multiple values as arrays
+        // Columns = arry and values = array
+        // These are associative based on key (ie cols = user, pass, active ?? vals = user, pass, 1)
+
+        foreach($columns as $key => $val) $this -> set_update_column($val, $values[$key]);
+
         return $this;
     } // set_update_columns()
 
@@ -268,16 +294,15 @@ class query extends db{
         return $this;
     } // set_insert_column()
 
-    function set_insert_columns($columns, $values){
+    function set_insert_array($columns, $values){
         // The key difference is that this accpets multiple values as arrays
         // Columns = arry and values = array
         // These are associative based on key (ie cols = user, pass, active ?? vals = user, pass, 1)
 
-        foreach($columns as $key => $val)
-            $this -> set_insert_column($val, $values[$key]);
+        foreach($columns as $key => $val) $this -> set_insert_column($val, $values[$key]);
 
         return $this;
-    } // set_insert_columns
+    } // set_insert_columns()
 
     function set_alias($alias){
         $this -> alias = $alias;
@@ -285,6 +310,7 @@ class query extends db{
     } // set_alias()
 
     function set_return($val = "all"){
+        // Return all records or just a single record
         if($val == "all")
             $this -> return_solo = false;
         else
@@ -311,29 +337,11 @@ class query extends db{
 
     function get_results(){
         return $this -> results;
-    }
+    } // get_results()
 
     function get_rowCount(){
         return $this -> row_count;
-    }
-
-    /*==================================================================================================================
-        Database Audit Logging
-    ==================================================================================================================*/
-
-    private function audit_db_record_create($table, $record_id){
-        if(empty($_SESSION)) session_start();
-        $user_id = $_SESSION["user_session"]["user_id"] ?? null;
-        $insert_cols = ["rec_table_name", "rec_row_id", "create_date", "create_ip", "create_id", "create_sess_id"];
-        $insert_vals = [$table, $record_id, date("Y-m-d h:i:s"), $_SERVER["REMOTE_ADDR"], $user_id, $_SESSION["fnd"]["id"]];
-        $db = new query();
-        $db -> set_insert_columns($insert_cols, $insert_vals) -> insert("log_record_life");
-        return $this;
-    } // audit_db_record_create()
-
-    private function audit_db_record_edit(){} // audit_db_record_edit()
-
-    private function audit_db_record_delete(){} // audit_db_record_delete()
+    } // get_rowCount()
 
     /*==================================================================================================================
         Class Control Methods
@@ -358,12 +366,16 @@ class query extends db{
                 if(empty($this -> columns)) $this -> error_handler -> mk_error("dev", "No values set to update.");
                 $this -> query_string = "UPDATE {$this -> table} SET {$this -> columns} {$this -> where_stmt}";
                 break;
+            case "deactivate":
+                $this -> query_string = "UPDATE {$this -> table} SET active = 0 {$this -> where_stmt}";
+                break;
             case "delete":
                 $this -> query_string = "DELETE FROM {$this -> table} {$this -> where_stmt}";
                 break;
         }
 
         $this -> query = $this -> db -> prepare(trim($this -> query_string));
+
         // Run query and capture run time
         $query_start_time = microtime(true);
             try{
@@ -405,8 +417,12 @@ class query extends db{
             );
             $this -> lastInsertId = $this -> db -> lastInsertId();
             // Add to database record logs
-            if(aces_db_record_logging_edits == true && $this -> table != "log_record_life")
-                $this -> audit_db_record_create($this -> table, $this -> lastInsertId);
+            // if(aces_db_record_logging_edits == true && $this -> table != "log_record_life")
+                // $this -> audit_db_record_create($this -> table, $this -> lastInsertId);
+        }elseif($this -> query_type == "deactivate"){
+            // GET RECORD ID FROM DELETED TABLE TO REFERENCE IN AUDIT TABLE
+            // CREATE SEPARATE WHERE STATEMENT TO DEAL WITH ARRAYS VS SINGLE WHERE SO WE CAN TRACK VALUE AND COLUMN FOR DEACTIVATE AUTOMATIC FUNCTION
+            // $this -> audit_db_record_delete($this -> table, $record_id);
         }else{ // query_type == delete or update
             $this -> results = array("status"=>1);
         }
