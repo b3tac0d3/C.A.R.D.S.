@@ -3,9 +3,10 @@ document.addEventListener("DOMContentLoaded", function() {
         // Check if the clicked element is a form element
         if(event.target.form && event.target.tagName == "BUTTON"){
             // If it is a form, check if it's asking to be spaded
-            if(event.target.form.classList.contains("spadeMe")) spadeForm(event);
+            if(event.target.form.classList.contains("spadeMe")) 
+                spadeForm(event);
         // If it's not a form, see if it's a spaded element
-        }else if(event.target.classList.contains("spadeIt") || event.target.classList.contains("spadeScript")){
+        }else if(event.target.classList.contains("spadeMe") || event.target.classList.contains("spadeScript")){
             spadeLink(event);
         }
     });

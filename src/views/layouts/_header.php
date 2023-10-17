@@ -1,5 +1,5 @@
 <?php
-    $frm = new framework\nav();
+    $fw = new framework\nav();
 ?>
 
 
@@ -12,11 +12,27 @@
     
       <ul class="nav nav-pills">
         <?php
-            $frm -> build_nav_link("Home", "");
-            $frm -> build_nav_link("Documentation", "docs");
-            $frm -> build_nav_link("Login", "login");
-            $frm -> build_nav_link("Register", "register");
-            $frm -> build_nav_link("Todo", "todo");
+            
+            $public_nav = 
+                $fw -> build_nav_link("Home", "") .
+                $fw -> build_nav_link("Documentation", "docs") .
+                $fw -> build_nav_link("Login", "login") .
+                $fw -> build_nav_link("Register", "register") .
+                $fw -> build_nav_link("Todo", "todo");
+
+            $private_nav = 
+                $fw -> build_nav_link("Home", "") .
+                $fw -> build_nav_link("Documentation", "docs") .
+                $fw -> build_nav_link("Todo", "todo") .
+                $fw -> build_nav_link("Logout", "logout", "spadeScript");
+
+            $sess = new session\user_session();
+
+            if($sess -> validate_user_session() === 1)
+                echo $private_nav;    
+            else
+                echo $public_nav;
+                
         ?>
       </ul>
     </header>

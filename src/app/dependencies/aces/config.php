@@ -15,7 +15,7 @@ define("aces_db_name", $_SESSION['fnd']['db']['database']);
 define("aces_db_user", $_SESSION['fnd']['db']['username']);
 define("aces_db_pass", $_SESSION['fnd']['db']['password']);
 
-// Turn logs on or off
+// Turn file logs on or off
 define("aces_log_status_query", true); // Query log on or off (true | false)
 define("aces_log_status_connection", true); // Connection log on or off (true | false)
 define("aces_log_status_error", true); // Error log on or off (true |)

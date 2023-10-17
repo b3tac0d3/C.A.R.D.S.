@@ -5,7 +5,7 @@ use sm;
 
 class nav{
 
-    function build_nav_link($name, $input_path = null){
+    function build_nav_link($name, $input_path = null, $class = null){
         /* 
             -- July 10, 2023
             -- b3tac0d3
@@ -13,11 +13,15 @@ class nav{
             with better URI reading or redoing in javascript just for fun.
         */
         $aria = null;
-        $class = null;
 
-        $href = sm::url("base") . $input_path;
+        if(!str_contains($class ?? 0, "spadeScript")) 
+            $href = sm::url("base") . $input_path;
+        else
+            $href = $input_path;
+        
         $hard_path = array_filter(explode('/', parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH)));
         
+
         if(array_search($input_path, $hard_path)){
             $class = "active";
             $aria = "aria-current='page'";
@@ -26,7 +30,8 @@ class nav{
             $aria = "aria-current='page'";
         }
 
-        echo "<li class='nav-item'>
+        return 
+            "<li class='nav-item'>
                 <a href='$href' class='nav-link $class' $aria>
                     $name
                 </a>

@@ -67,7 +67,7 @@ class user_registration{
 
         // Check database for existing user
         $db = new aces\query();
-        $validate_user = $db -> set_column("username") -> set_where("username", $this -> username) -> select("users");
+        $validate_user = $db -> set_select_column("username") -> set_where("username", $this -> username) -> select("users");
         if(count($validate_user) > 0){
             echo $ajax -> quickMsg("Username already exists in database");
             return;
@@ -84,7 +84,7 @@ class user_registration{
         
         // Add user to db
         $db1 = new aces\query();
-        $user_add = $db1 -> set_insert_columns($user_insert_cols, $user_insert_vals) -> insert("users");
+        $user_add = $db1 -> set_insert_array($user_insert_cols, $user_insert_vals) -> insert("users", "User registration form");
         $user_id = $user_add["last_insert_id"];
 
         // Set up contact insert cols and vals
@@ -93,7 +93,7 @@ class user_registration{
         
         // Add user contact info for reference
         $db2 = new aces\query();
-        $db2 -> set_insert_columns($cont_insert_cols, $cont_insert_vals) -> insert("contacts");
+        $db2 -> set_insert_array($cont_insert_cols, $cont_insert_vals) -> insert("contacts", "User registration form");
 
         echo $ajax -> quickMsg("done");
         return;

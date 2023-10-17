@@ -83,7 +83,7 @@ class user_login{
     
     function query_user_info($username){
         $db = new aces\query();
-        $this -> user_data_array = $db -> set_where("username", $username) -> set_return("1") -> select("users");
+        $this -> user_data_array = $db -> set_where("username", $username) -> set_fetch("1") -> select("users");
     } // query_user_info()
 
     function test_user_name(){
@@ -113,7 +113,7 @@ class user_login{
         $vals = [$user_id, $username, $status, $session_id, $create_ip];
 
         $db = new aces\query();
-        $db -> set_insert_columns($cols, $vals) -> insert("log_user_logins");
+        $db -> set_insert_array($cols, $vals) -> insert("log_user_logins");
     } // audit_log_user_login
 
     function logout(){

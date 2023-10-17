@@ -54,7 +54,7 @@ class query extends db{
     private $results;
     
     // Boolean to return single top row or multiple rows
-    private $return_solo;
+    private $fetch_solo;
     
     // Complete query string to be executed | string
     private $query_string;
@@ -87,6 +87,16 @@ class query extends db{
     private $db;
 
     /*==================================================================================================================
+        Logging
+    ==================================================================================================================*/
+
+    private $query_start_time;
+
+    private $query_end_time;
+
+    private $query_run_time;
+
+    /*==================================================================================================================
         Debug vars
     ==================================================================================================================*/
 
@@ -110,42 +120,40 @@ class query extends db{
         $this -> db = $this -> connect();
         //$this -> error_handler = new load_errors();
         $this -> log = new log();
-        $this -> set_fetch(PDO::FETCH_ASSOC);
-        $this -> set_return();
+        $this -> set_fetch();
     } // __construct()
 
     function select($table, $alias = null){
         $this -> query_type = "select";
         $this -> alias = $alias;
-        return $this -> execute_query($table);
+        return $this -> run_select_query($table);
     } // select()
 
-    function insert($table){
+    function insert($table, $audit_table_log_note = null){
         $this -> query_type = "insert";
-        return $this -> execute_query($table);
+        return $this -> run_insert_query($table, $audit_table_log_note);
     } // insert()
 
     function update($table){
         $this -> query_type = "update";
-        return $this -> execute_query($table);
+        return $this -> run_update_query($table);
     } // update()
 
     function delete($table){
         $this -> query_type = "delete";
-        return $this -> execute_query($table);
+        return $this -> run_delete_query($table);
     } // delete()
 
-    function deactivate($table){
+    function deactivate($table, $row_id){
         // This function is specifically designed to deactivate rows and log the delete while keeping the record
         // Consider this a "soft delete"
         $this -> query_type = "deactivate";
-        return $this -> execute_query($table);
+        return $this -> run_deactivate_query($table, $row_id);
     } // deactivate()
 
     function custom($query, $params = array()){
         $this -> query_string = $query;
         $this -> execute = $params;
-        $this -> query = $this -> db -> prepare($this -> query_string);
         $this -> query -> execute($this -> execute);
         $this -> results = $this -> query -> fetchAll($this -> fetch);
         $this -> lastInsertId = $this -> db -> lastInsertId();
@@ -237,13 +245,8 @@ class query extends db{
         $this -> limit = "LIMIT $start, $limit";
         return $this;
     } // set_limit()
-
-    function set_fetch($fetch){
-        $this -> fetch = $fetch;
-        return $this;
-    } // set_fetch()
     
-    function set_column($column = null){
+    function set_select_column($column = null){
         if(empty($column)){
             $this -> columns = "*";
         }else{
@@ -251,9 +254,9 @@ class query extends db{
             $this -> columns .= $column;
         }
         return $this;
-    } // set_columns()
+    } // set_select_columns()
 
-    function set_update_column($column, $value=null){
+    function set_update_column($column, $value = null){
         if(!empty($this -> columns_list)) $this -> columns_list .= ",";
         if(!empty($this -> insert_list)) $this -> insert_list .= ",";
         
@@ -309,12 +312,17 @@ class query extends db{
         return $this;
     } // set_alias()
 
-    function set_return($val = "all"){
+    function set_fetch($fetch_solo = 0, $fetch = PDO::FETCH_ASSOC){
+        // Default is to return all records
         // Return all records or just a single record
-        if($val == "all")
-            $this -> return_solo = false;
+        if($fetch_solo == 0)
+            $this -> fetch_solo = false;
         else
-            $this -> return_solo = true;
+            $this -> fetch_solo = true;
+
+        // Set the PDO fetch type. Accepts all values
+        $this -> fetch = $fetch;
+
         return $this;
     } // set_return()
 
@@ -347,90 +355,171 @@ class query extends db{
         Class Control Methods
     ==================================================================================================================*/
 
-    private function execute_query($table){
+    private function run_select_query($table){
+        // Prepare query and do pre-checks
+        $this -> pre_query($table);
+        
+        // If no columns were entered, default to all columns
+        if(empty($this -> columns)) $this -> set_select_column();
+        
+        // Prepare the proper query string
+        $this -> query_string = "SELECT {$this -> columns} FROM {$this -> table} {$this -> alias} {$this -> joins_stmt} {$this -> where_stmt} {$this -> group} {$this -> order} {$this -> limit}";
+        
+        // Run query
+        $this -> execute_query();
+
+        // Get the proper results to return to user
+        $this -> row_count = $this -> query -> rowCount();
+        if($this -> fetch_solo == true){
+            $this -> results = $this -> query -> fetch($this -> fetch);
+        }else{
+            $this -> results = $this -> query -> fetchAll($this -> fetch);
+        }
+
+        return $this -> results;
+    } // run_select_query()
+
+    private function run_insert_query($table, $audit_table_log_note = null){
+        // Prepare query and do pre-checks
+        $this -> pre_query($table);
+
+        // If no columns are set to insert, we can't continue
+        if(empty($this -> columns)) $this -> error_handler -> mk_error("dev", "No values set to insert.");
+        
+        // Prepare the proper query string
+        $this -> query_string = "INSERT INTO {$this -> table} {$this -> columns} VALUES {$this -> insert_sql_string}";
+        
+        // Run query
+        $this -> execute_query();
+
+        // Get the proper results to return to the user
+        $this -> results = array(
+            "status" => 1,
+            "last_insert_id" => $this -> db -> lastInsertId()
+        );
+
+        // Get last insert id for logging and db record purposing
+        $this -> lastInsertId = $this -> db -> lastInsertId();
+
+        // Add to database record logs
+        if(aces_db_record_logging_edits == true && $this -> table != "log_record_audit"){
+            $audit = new query_audits();
+            $audit -> audit_db_record_create($this -> table, $this -> lastInsertId, $audit_table_log_note);
+        }
+
+        return $this -> results;
+    } // run_insert_query
+
+    private function run_update_query($table){
+        // Prepare query and do pre-checks
+        $this -> pre_query($table);
+
+        // If no columns are set to update, we can't continue
+        if(empty($this -> columns)) $this -> error_handler -> mk_error("dev", "No values set to update.");
+
+        // Prepare the proper query string
+        $this -> query_string = "UPDATE {$this -> table} SET {$this -> columns} {$this -> where_stmt}";
+
+        // Run query
+        $this -> execute_query();
+
+        // Get the proper results to return to the user
+        $this -> results = array("status" => 1);
+        
+        return $this -> results;
+    } // run_update_query
+
+    private function run_delete_query($table){
+        // Prepare query do do pre-checks
+        $this -> pre_query($table);
+
+        // Prepare the proper query string
+        $this -> query_string = "DELETE FROM {$this -> table} {$this -> where_stmt}";
+
+        // Run query
+        $this -> execute_query();
+
+        // Get the proper results to return to the user
+        $this -> results = array("status" => 1);
+        
+        return $this -> results;
+    } // run_delete_query
+
+    private function run_deactivate_query($table, $row_id){
+        // Prepare the proper query string with the only where statement needed
+        $this -> set_where("id", $row_id);
+
+        // Prepare query do do pre-checks
+        $this -> pre_query($table);
+
+        // Prepare the query string
+        $this -> query_string = "UPDATE {$this -> table} SET active = 0 {$this -> where_stmt}";
+        
+        // Run query
+        $this -> execute_query();
+        
+        // Log the results in the record life table
+        // DON'T FORGET TO ADD CHECKING FOR DATABASE LOGGING TRUE TO BE ON
+        $audit = new query_audits();
+        $audit -> audit_db_record_delete($table, $row_id);
+
+        return $this -> results;
+    } // run_deactivate_query
+
+    private function run_custom_query($table){
+        
+    }
+
+    private function pre_query($table){
         // Absolute
         if(empty($this -> table = $table)) $this -> error_handler -> mk_error("dev", "select query has empty table name");
         if(!empty($this -> joins_array)) $this -> execute = array_merge($this -> execute, $this -> joins_array);
         if(!empty($this -> where_array)) $this -> execute = array_merge($this -> execute, $this -> where_array);
 
-        switch($this -> query_type){
-            case "select":
-                if(empty($this -> columns)) $this -> set_column();
-                $this -> query_string = "SELECT {$this -> columns} FROM {$this -> table} {$this -> alias} {$this -> joins_stmt} {$this -> where_stmt} {$this -> group} {$this -> order} {$this -> limit}";
-                break;
-            case "insert":
-                if(empty($this -> columns)) $this -> error_handler -> mk_error("dev", "No values set to insert.");
-                $this -> query_string = "INSERT INTO {$this -> table} {$this -> columns} VALUES {$this -> insert_sql_string}";
-                break;
-            case "update":
-                if(empty($this -> columns)) $this -> error_handler -> mk_error("dev", "No values set to update.");
-                $this -> query_string = "UPDATE {$this -> table} SET {$this -> columns} {$this -> where_stmt}";
-                break;
-            case "deactivate":
-                $this -> query_string = "UPDATE {$this -> table} SET active = 0 {$this -> where_stmt}";
-                break;
-            case "delete":
-                $this -> query_string = "DELETE FROM {$this -> table} {$this -> where_stmt}";
-                break;
-        }
+        return $this;
+    } // pre_query()
 
+
+    private function execute_query(){
+        // Final prep on the query string to translate to query
         $this -> query = $this -> db -> prepare(trim($this -> query_string));
+        
+        // Attempt to run final query
+        try{
+            // Capture query start time for tracking
+            $this -> query_start_time = microtime(true);
+            
+            // Run query
+            $this -> query -> execute($this -> execute);
 
-        // Run query and capture run time
-        $query_start_time = microtime(true);
-            try{
-                $this -> query -> execute($this -> execute);
-            }catch (PDOException $e){
-                $this -> log -> set_record("query_error", [
-                    "error" => trim($e -> getMessage()),
-                    "query_string" => preg_replace(array('/\s{2,}/', '/[\t\n]/'), ' ', $this -> dumpSQLQuery($this -> query_string, $this -> execute))
-                ]);
-                echo "<br><br><b><i>ACES Error</i>: " . $e -> getMessage() . "</b>";
-                exit;
-            } // try
-            $query_row_count = $this -> query -> rowCount();
-        $query_end_time = microtime(true);
-        $query_execute_time = $query_end_time - $query_start_time;
+            // Get query run time
+            $this -> query_end_time = microtime(true);
+            $this -> query_run_time = $this -> query_end_time - $this -> query_start_time;
 
-        // Query logging
+        }catch (PDOException $e){
+            $this -> log -> set_record("query_error", [
+                "error" => trim($e -> getMessage()),
+                "query_string" => preg_replace(array('/\s{2,}/', '/[\t\n]/'), ' ', $this -> dumpSQLQuery($this -> query_string, $this -> execute))
+            ]);
+            echo "<br><br><b><i>ACES Error</i>: " . $e -> getMessage() . "</b>";
+            exit;
+        } // try
+
+        // Post query results handling and query logging
+        $this -> row_count = $this -> query -> rowCount();
+
+        // Log query if applicable
         if(aces_log_status_query == true){
             $log_data_array = array(
                 "table" => $this -> table,
-                "result_count" => $query_row_count,
-                "run_time" => round($query_execute_time, 5) . "s",
+                "result_count" => $this -> row_count,
+                "run_time" => round($this -> query_run_time, 5) . "s",
                 "query_string" => preg_replace(array('/\s{2,}/', '/[\t\n]/'), ' ', $this -> dumpSQLQuery($this -> query_string, $this -> execute))
             );
             $this -> log -> set_record("query", $log_data_array);
         }
-        
-        if($this -> query_type == "select"){
-            $this -> row_count = $this -> query -> rowCount();
-            if($this -> return_solo == true){
-                $this -> results = $this -> query -> fetch($this -> fetch);
-            }else{
-                $this -> results = $this -> query -> fetchAll($this -> fetch);
-            }
-        }elseif($this -> query_type == "insert"){
-            $this -> results = array(
-                "status" => 1,
-                "last_insert_id" => $this -> db -> lastInsertId()
-            );
-            $this -> lastInsertId = $this -> db -> lastInsertId();
-            // Add to database record logs
-            // if(aces_db_record_logging_edits == true && $this -> table != "log_record_life")
-                // $this -> audit_db_record_create($this -> table, $this -> lastInsertId);
-        }elseif($this -> query_type == "deactivate"){
-            // GET RECORD ID FROM DELETED TABLE TO REFERENCE IN AUDIT TABLE
-            // CREATE SEPARATE WHERE STATEMENT TO DEAL WITH ARRAYS VS SINGLE WHERE SO WE CAN TRACK VALUE AND COLUMN FOR DEACTIVATE AUTOMATIC FUNCTION
-            // $this -> audit_db_record_delete($this -> table, $record_id);
-        }else{ // query_type == delete or update
-            $this -> results = array("status"=>1);
-        }
-        
-        // Dev debugging
-        if($this -> debug_mode == true) $this -> debug_me();
 
-        return $this -> results;
+        return $this;
     } // execute_query()
 
     /*==================================================================================================================

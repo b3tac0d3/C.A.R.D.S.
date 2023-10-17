@@ -21,4 +21,8 @@
 @endsection
 
 @section(footer)
+<?php
+    if(empty($_SESSION)) session_start();
+    $_SESSION["user_session"] = null;
+?>
 @endsection

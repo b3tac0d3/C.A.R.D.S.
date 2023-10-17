@@ -57,6 +57,13 @@ class route extends controller{
         return $this;
     } // sess()
 
+    function public_only($redirect = "dashboard"){
+        // For pages like login or register. If the user gets there through hard link but has existing session, they're redirected to the dashboard or page of choice
+        if(empty($_SESSION)) session_start();
+        if(!empty($_SESSION["user_session"])) header("location: $redirect");
+        return $this;
+    }
+
     function perm($permission_required){
         // Checking of user role for page loads
         
