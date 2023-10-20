@@ -172,9 +172,9 @@ class query extends db{
         if(empty($ons_array)) $this -> error_handler -> mk_error("dev", "Function set_join of database/query.php file is missing comparison values. Check use of input function.");
         if(empty($ons)) $ons = "";
 
-        foreach($ons_array as $on){
-            $ons .= "{$ons_array[0]}";
-            if(!empty($ons_array[1])) array_push($this -> joins_array, $ons_array[1]);
+        foreach($ons_array as $k => $v){
+            $ons .= "$k = $v";
+            // if(!empty($v)) array_push($this -> joins_array, $on[1]);
             if(next($ons_array)) $ons .= "AND ";
         }
         // find non-relational on conditions and bind to execute array
@@ -255,6 +255,13 @@ class query extends db{
         }
         return $this;
     } // set_select_columns()
+
+    function set_select_array($columns){
+        foreach($columns as $c){
+            $this -> set_select_column($c);
+        }
+        return $this;
+    } // set_select_array
 
     function set_update_column($column, $value = null){
         if(!empty($this -> columns_list)) $this -> columns_list .= ",";
@@ -365,6 +372,9 @@ class query extends db{
         // Prepare the proper query string
         $this -> query_string = "SELECT {$this -> columns} FROM {$this -> table} {$this -> alias} {$this -> joins_stmt} {$this -> where_stmt} {$this -> group} {$this -> order} {$this -> limit}";
         
+        // Debugging
+        // var_dump($this -> query_string);exit;
+        
         // Run query
         $this -> execute_query();
 
@@ -402,7 +412,9 @@ class query extends db{
         $this -> lastInsertId = $this -> db -> lastInsertId();
 
         // Add to database record logs
-        if(aces_db_record_logging_edits == true && $this -> table != "log_record_audit"){
+        if(aces_db_record_logging_edits == true && !str_contains($this -> table, "log_")){
+            // FOR NOW, THIS FEATURE IS SOLELY RELYING ON THE USE OF THE TERM "LOG_" TO DEFINE LOG TABLES.
+            // IN THE FUTURE, CONSIDER CREATING A LIST OF LOG TABLES TO REFERENCE INSTEAD.
             $audit = new query_audits();
             $audit -> audit_db_record_create($this -> table, $this -> lastInsertId, $audit_table_log_note);
         }

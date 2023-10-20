@@ -12,6 +12,7 @@ class controller{
     function get_view_data($file_name, $permission_required = 0){
         $view = new view();
         $view -> get_view_data($file_name);
+        $view -> get_permission_data();
         // $view -> get_includes_data();
         $view -> get_layout_data();
         $view -> merge_layout_view_data();

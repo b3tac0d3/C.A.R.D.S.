@@ -3,6 +3,7 @@
 namespace document;
 use decks\decks;
 use sm;
+use rbac;
 
 /* 
     URL Load Directive
@@ -83,6 +84,13 @@ class view{
         
         return $this -> view_file_data;
     } // get_view_data()
+
+    function get_permission_data(){
+        if(!empty(preg_match("/@perm\((\d+)\)/i", $this -> view_file_data, $perms))){
+            $rbac = new rbac\rbac();
+            $rbac -> check_user_page($perms[1]);
+        }
+    } // get_permission_data()
 
     function get_includes_data(){
         if(!empty(preg_match("/(?<!\\\)@includes\(\S+.\)/i", $this -> view_file_data, $includes))){

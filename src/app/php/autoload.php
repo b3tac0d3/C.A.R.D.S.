@@ -11,9 +11,11 @@ require_once $php . "short_map.php";
 require_once $php . "view.php";
 require_once $php . "controller.php";
 require_once $php . "route_processor.php";
-require_once $php . "framework.php";
+require_once $php . "nav.php";
 require_once $php . "user_session.php";
 require_once $php . "system_database_record_logs.php";
+require_once $php . "rbac.php";
+require_once $php . "todo.php";
 
 // Require the proper plugins
 require_once $depends . "aces/loader.php"; // Database

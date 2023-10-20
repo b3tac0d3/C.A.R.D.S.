@@ -3,6 +3,7 @@
 namespace document;
 use document\controller;
 use session\user_session;
+use rbac;
 
 class route extends controller{
 
@@ -71,11 +72,8 @@ class route extends controller{
         $this -> sess();
         
         // If session is valid, check required permissions
-        if(empty($_SESSION)) session_start();
-        if($_SESSION["user_session"]["main_role"] < $permission_required){
-            header("location: error_permission_required");
-            return;
-        }
+        $rbac = new rbac\rbac();
+        $rbac -> check_user_page($permission_required);
         return $this;
     } // perm()
 

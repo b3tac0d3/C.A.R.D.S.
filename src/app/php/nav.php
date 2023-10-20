@@ -1,6 +1,6 @@
 <?php
 
-namespace framework;
+namespace nav;
 use sm;
 
 class nav{

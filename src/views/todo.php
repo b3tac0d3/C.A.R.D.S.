@@ -1,3 +1,4 @@
+@perm(1)
 @layout(layouts.primary)
 
 @section(post-header)
@@ -16,6 +17,14 @@
             <li>Finish registration Setup</li>
             <li>Build a small todo app using completed functionality</li>
         </ul>
+    </div>
+
+    <div class = "container">
+        <?php
+            $todo = new todo\todo();
+
+            var_dump($todo -> fetch_todos());
+        ?>
     </div>
 @endsection
 

@@ -1,5 +1,5 @@
 <?php
-    $fw = new framework\nav();
+    $fw = new nav\nav();
 ?>
 
 
@@ -21,7 +21,7 @@
                 $fw -> build_nav_link("Todo", "todo");
 
             $private_nav = 
-                $fw -> build_nav_link("Home", "") .
+                $fw -> build_nav_link("Home", "dashboard") .
                 $fw -> build_nav_link("Documentation", "docs") .
                 $fw -> build_nav_link("Todo", "todo") .
                 $fw -> build_nav_link("Logout", "logout", "spadeScript");

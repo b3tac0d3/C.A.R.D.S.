@@ -25,7 +25,12 @@
 
     $query = new aces\query();
 
-    $query -> deactivate("users", 1);
+    var_dump($query -> set_select_array(["u.id as user_id", "u.username", "c.fname", "c.lname"]) 
+                    -> set_join("contacts", "c", ["c.id" => "u.id"]) 
+                    -> set_where("u.id", 1) 
+                    -> select("users", "u"));
+
+    // SELECT u.id as user_id, u.username, c.fname, c.lname FROM users u INNER JOIN contacts c ON c.id = u.id WHERE u.id = 1 
 ?>
 @endsection
 
